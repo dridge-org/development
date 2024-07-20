@@ -1,0 +1,9 @@
+[submodule "service"]
+	path = service
+	url = https://github.com/dridge-org/service
+[submodule "plugin"]
+	path = plugin
+	url = https://github.com/dridge-org/plugin
+[submodule "interface"]
+	path = interface
+	url = https://github.com/dridge-org/interface
