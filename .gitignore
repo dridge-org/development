@@ -2,5 +2,4 @@
 **/.DS_Store
 **/.env
 **/.dridge
-**/config.toml
 **/config.*.toml

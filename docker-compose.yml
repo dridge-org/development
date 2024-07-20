@@ -1,0 +1,39 @@
+services:
+  db:
+    image: postgres:latest
+    expose:
+      - 5432
+    env_file:
+      - .env
+    volumes:
+      - db-data:/var/lib/postgresql/data
+  proxy:
+    build:
+      context: ./service
+      dockerfile: Dockerfile
+    image: dridge-dev:latest
+    ports: 
+      - "25443:25443"
+      - "25022:25022"
+      - "25565:25565/tcp"
+      - "25565:25565/udp"
+    depends_on:
+      - db
+    environment:
+      DRIDGE_CONFIG: /app/config.toml
+    volumes:
+      - ./config.proxy.toml:/app/config.toml
+      - .dridge/:/app/.dridge/
+    command: dridge proxy
+  worker:
+    image: dridge-dev:latest
+    depends_on:
+      - proxy
+    environment:
+      DRIDGE_CONFIG: /app/config.toml
+    volumes:
+      - ./config.worker.toml:/app/config.toml
+      - .dridge:/app/.dridge/
+
+volumes:
+  db-data:
