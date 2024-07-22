@@ -7,26 +7,68 @@ services:
       - .env
     volumes:
       - db-data:/var/lib/postgresql/data
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: 10m
+        max-file: "3"
+    healthcheck:
+      test:
+        - CMD
+        - pg_isready
+        - -U
+        - $POSTGRES_USER
+      interval: 2s
+      timeout: 3s
+      retries: 40
+  cache:
+    image: valkey/valkey:latest
+    ports:
+      - "6379:6379"
+    hostname: cache
+    command: redis-server --appendonly yes
+    volumes:
+      - cache-data:/data
+    environment:
+      ALLOW_EMPTY_PASSWORD: "yes"
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: 10m
+        max-file: "3"
+    healthcheck:
+      test:
+        - CMD
+        - redis-cli
+        - ping
+      interval: 1s
+      timeout: 3s
+      retries: 30
   proxy:
     build:
       context: ./service
       dockerfile: Dockerfile
-    image: dridge-dev:latest
+    image: dridge:latest
     ports: 
       - "25443:25443"
       - "25022:25022"
       - "25565:25565/tcp"
       - "25565:25565/udp"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
     environment:
       DRIDGE_CONFIG: /app/config.toml
     volumes:
       - ./config.proxy.toml:/app/config.toml
       - .dridge/:/app/.dridge/
     command: dridge proxy
+    restart: always
+    tty: true # docker run -t
   worker:
-    image: dridge-dev:latest
+    image: dridge:latest
     depends_on:
       - proxy
     environment:
@@ -34,6 +76,9 @@ services:
     volumes:
       - ./config.worker.toml:/app/config.toml
       - .dridge:/app/.dridge/
+    restart: always
+    tty: true # docker run -t
 
 volumes:
-  db-data:
+  db-data: {}
+  cache-data: {}
